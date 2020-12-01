@@ -51,3 +51,4 @@ Thumbs.db
 bin/src-template.py
 bin/test-template.py
 aocsetup.conf
+__pycache__
