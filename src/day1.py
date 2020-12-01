@@ -3,23 +3,25 @@ from src.common.util import read_input
 
 def part_one(input):
     expenses_report = [int(i) for i in input]
+    n = len(expenses_report)
 
-    for a in expenses_report:
-        for b in expenses_report:
-            if a + b == 2020:
-                return a * b
+    for i in range(n):
+        for j in range(i + 1, n):
+            if expenses_report[i] + expenses_report[j] == 2020:
+                return expenses_report[i] * expenses_report[j]
     
     return 0
 
 
 def part_two(input):
     expenses_report = [int(i) for i in input]
+    n = len(expenses_report)
 
-    for a in expenses_report:
-        for b in expenses_report:
-            for c in expenses_report:
-                if a + b + c == 2020:
-                    return a * b * c
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                if expenses_report[i] + expenses_report[j] + expenses_report[k] == 2020:
+                    return expenses_report[i] * expenses_report[j] * expenses_report[k]
     
     return 0
 
