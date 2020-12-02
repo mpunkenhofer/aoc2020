@@ -9,7 +9,7 @@ def part_one(input):
         for j in range(i + 1, n):
             if expenses_report[i] + expenses_report[j] == 2020:
                 return expenses_report[i] * expenses_report[j]
-    
+
     return 0
 
 
@@ -22,7 +22,7 @@ def part_two(input):
             for k in range(j + 1, n):
                 if expenses_report[i] + expenses_report[j] + expenses_report[k] == 2020:
                     return expenses_report[i] * expenses_report[j] * expenses_report[k]
-    
+
     return 0
 
 

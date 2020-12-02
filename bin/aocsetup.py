@@ -1,11 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
+from random import randint
 import argparse
 import logging
 import json
 import sys
 import requests
 import os
+import time
 
 
 def load_config(config_file):
@@ -109,7 +111,8 @@ def load_input_file(year, day, session_id):
     else:
         logging.info('Invalid request return: {} for {}'.format(
             r.status_code, uri))
-        print('Error: Failed to load input: {} returned {}.'.format(uri, r.status_code))
+        print('Error: Failed to load input: {} returned {}.'.format(
+            uri, r.status_code))
         return None
 
 
@@ -163,9 +166,35 @@ def write_input(output, session_cookie, year, day, force):
 
 
 def wait():
-    # today = datetime.today()
-    # delta = datetime.datetime() - datetime.datetime.now()
-    print('-w is not implemented yet.')
+    utc_present = datetime.utcnow()
+    delay = randint(2, 10)
+    utc_aoc_release = utc_present.replace(
+        month=12, hour=5, minute=0, second=delay, microsecond=0)
+
+    if utc_aoc_release < utc_present:
+        utc_aoc_release = utc_aoc_release + timedelta(days=1)
+
+    time_until_release = utc_aoc_release - utc_present
+    hours_until_release = time_until_release.seconds / 3600
+
+    if hours_until_release > 24:
+        print('Error: The next AoC Day is not tommorrow! (>24 hours).')
+        print("We don't want to wait that long. Consider using -y <YEAR> and -d <DAY>")
+        sys.exit(0)
+
+    logging.info('Starting wait for {}'.format(time_until_release))
+    
+    while time_until_release.seconds >= 0:
+        time_until_release = utc_aoc_release - datetime.utcnow()
+        hours, remainder = divmod(time_until_release.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        sys.stdout.write('\r')
+        sys.stdout.write('{:02}:{:02}:{:02} until Day {}!'.format(
+            int(hours), int(minutes), int(seconds), utc_aoc_release.day))
+        sys.stdout.flush()
+        time.sleep(1)
+
+    return utc_aoc_release.year, utc_aoc_release.day
 
 
 def main():
@@ -212,29 +241,30 @@ def main():
 
     logging.info('arguments: {}'.format(args))
 
-    if args.day is None:
-        if today.month != 12:
-            print('''Error: Can't use current day because it's not december! Consider using -d <DAY>''') 
-            sys.exit(0)
-        else:
-            args.day = today.day
-    if args.year is None:
-        args.year = today.year
-
     if args.wait:
-        wait()
-    # else:
-    if not 2015 <= args.year <= today.year:
-        logging.info('year: {} out of acceptable range'.format(args.year))
-        print('Invalid input: year has to be between 2015 and {}. (input was: {})'.format(
-            today.year, args.year))
-        sys.exit(0)
+        args.year, args.day = wait()
+    else:
+        if args.day is None:
+            if today.month != 12:
+                print(
+                    '''Error: Can't use current day because it's not december! Consider using -d <DAY>''')
+                sys.exit(0)
+            else:
+                args.day = today.day
+        if args.year is None:
+            args.year = today.year
+        
+        if not 2015 <= args.year <= today.year:
+            logging.info('year: {} out of acceptable range'.format(args.year))
+            print('Invalid input: year has to be between 2015 and {}. (input was: {})'.format(
+                today.year, args.year))
+            sys.exit(0)
 
-    if not 1 <= args.day <= 25:
-        logging.info('day: {} out of acceptable range'.format(args.day))
-        print(
-            'Invalid input: there are 1-25 days in one AoC. (input was: {})'.format(args.day))
-        sys.exit(0)
+        if not 1 <= args.day <= 25:
+            logging.info('day: {} out of acceptable range'.format(args.day))
+            print(
+                'Invalid input: there are 1-25 days in one AoC. (input was: {})'.format(args.day))
+            sys.exit(0)
 
     write_input(args.input_output, args.session_cookie,
                 args.year, args.day, args.force)
