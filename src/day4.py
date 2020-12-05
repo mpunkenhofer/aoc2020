@@ -79,6 +79,8 @@ def part_two(input):
 
 
 def main():
+    # print('Day 4: Answer for Part 1 {}'.format(
+    #     part_one(read_input('inputs/reddit_day4_input_help.txt', '\n'))))
     print('Day 4: Answer for Part 1 {}'.format(
         part_one(read_input('inputs/input_day4.txt', '\n'))))
     print('Day 4: Answer for Part 2: {}'.format(
