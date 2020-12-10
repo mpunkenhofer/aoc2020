@@ -49,6 +49,7 @@ Template files you provide will be copied to the path specified with ```-so``` o
 
 All arguments can also be specified in a config file. ```aocsetup.conf``` is the default config file name the script is looking for if no specific config file name was passed via ```-cf```. You can generate a config file of your current arguments with ```-sc```. 
 
+Example:
 ```
 {
     "session-cookie": "SESSION ID",
