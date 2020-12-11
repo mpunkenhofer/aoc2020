@@ -6,4 +6,8 @@ def read_input(filename='input', separator=''):
     if len(separator) > 0:
         return contents.split(separator)
 
-    return contents
+    if not contents[-1]:
+        # remove last newline
+        return contents[:-1]
+    else:
+        return contents
