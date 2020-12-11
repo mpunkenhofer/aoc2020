@@ -141,7 +141,7 @@ def write_file(filename, content, force=False):
 
 
 def replace_placeholder(content: str, year, day):
-    content = content.replace('{{day}}', '{}'.format(day))
+    content = content.replace('{{day}}', '{:02d}'.format(day))
     content = content.replace('{{year}}', '{}'.format(year))
     return content
 
