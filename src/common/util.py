@@ -4,10 +4,7 @@ def read_input(filename='input', separator=''):
         contents = f.read()
 
     if len(separator) > 0:
-        return contents.split(separator)
+        contents = contents.split(separator)
+        return contents[:-1] if not contents[-1] else contents
 
-    if not contents[-1]:
-        # remove last newline
-        return contents[:-1]
-    else:
-        return contents
+    return contents
