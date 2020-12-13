@@ -22,33 +22,18 @@ def part_one(input):
     return diffs[1] * diffs[3]
 
 
-# def count_arrangements(current, remaining_adapters: list):
-#     possibilites = []
-#     next = remaining_adapters.pop(0)
-#     while next :
-
-
 def part_two(input):
     adapters = [int(i) for i in input if i]
 
     adapter_chain = sorted(adapters)
+    adapter_chain.append(adapter_chain[-1] + 3)
 
-    #test = count_arrangements(0, adapter_chain)
+    cost = {0: 1}
 
-    # for i in range(1, len(adapter_chain) - 1):
-    #     d = abs(min_chain[-1] - adapter_chain[i + 1])
-    #     if d > 3:
-    #         min_chain.append(adapter_chain[i])
-    #     else:
-    #         remaining.append(adapter_chain[i])
+    for a in adapter_chain:
+        cost[a] = cost.get(a - 3, 0) + cost.get(a - 2, 0) + cost.get(a - 1, 0)
 
-    # min_chain.append(adapter_chain[-1])
-
-    # chain_diff = len(adapter_chain) - len(min_chain)
-
-    # print(min_chain, remaining)
-
-    return 0
+    return cost[adapter_chain[-1]]
 
 
 def main():
