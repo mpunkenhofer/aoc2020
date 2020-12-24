@@ -38,6 +38,26 @@ def verify_ticket_any_rule(ticket, rules):
 
     return invalid_fields
 
+def valid_fields(tickets, rules):
+    rules_dict = {rule: i + 1 for i, rule in enumerate(rules)}
+
+    g = Glucose3()
+
+    for ticket in tickets:
+        for field in ticket:
+            clause = []
+
+            for rule, ranges in rules:
+                for r in ranges:
+                    if r[0] <= field <= r[1]:
+                        clause.append(rules_dict[rule])
+                    else:
+                        clause.append(-rules_dict[rule])
+
+            g.add_clause(clause)
+
+    return []
+    
 def part_one(input):
     rules, _, nearby_tickets = parse_input(input)
 
