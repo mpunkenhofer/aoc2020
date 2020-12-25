@@ -94,19 +94,21 @@ def print_slice(slices):
             print(line)
         print('')
 
+def print_example():
+    input = read_input('tests/inputs/test_input_day17_1.txt', '\n')
+    cubes = parse_input(input) 
+    print_slice(get_ascii_slices(cubes))
+    cubes = perform_cycle(cubes)
+    print('After 1 cycle:')
+    print_slice(get_ascii_slices(cubes, z=[-1, 0, 1]))
+    cubes = perform_cycle(cubes)
+    print('After 2 cycles:')
+    print_slice(get_ascii_slices(cubes, z=[-2, -1, 0, 1, 2]))
+    cubes = perform_cycle(cubes)
+    print('After 3 cycles:')
+    print_slice(get_ascii_slices(cubes, z=[-3, -2, -1, 0, 1, 2, 3]))
+
 def part_one(input, cycles=6):
-    # input = read_input('tests/inputs/test_input_day17_1.txt', '\n')
-    # cubes = parse_input(input) 
-    # print_slice(get_ascii_slices(cubes))
-    # cubes = perform_cycle(cubes)
-    # print('After 1 cycle:')
-    # print_slice(get_ascii_slices(cubes, z=[-1, 0, 1]))
-    # cubes = perform_cycle(cubes)
-    # print('After 2 cycles:')
-    # print_slice(get_ascii_slices(cubes, z=[-2, -1, 0, 1, 2]))
-    # cubes = perform_cycle(cubes)
-    # print('After 3 cycles:')
-    # print_slice(get_ascii_slices(cubes, z=[-3, -2, -1, 0, 1, 2, 3]))
     return len(perform_cycle(parse_input(input), cycles=cycles))
 
 def part_two(input, cycles=6, dimensions=4):

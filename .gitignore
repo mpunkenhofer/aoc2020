@@ -42,6 +42,11 @@ testem.log
 /typings
 .awcache
 
+# ANTLR
+.antlr
+*.interp
+*.tokens
+
 # System Files
 .DS_Store
 Thumbs.db
