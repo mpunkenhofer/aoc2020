@@ -27,50 +27,56 @@ def parse_input(input):
 
     return rules, my_ticket, nearby_tickets
 
-def verify_ticket_any_rule(ticket, rules):
-    invalid_fields = []
+def valid_tickets(tickets, rules):
+    result = []
+    ranges = sum([range for _, range in rules], [])
 
+    for ticket in tickets:
+        valid = True
+        for field in ticket:
+            if not any(map(lambda r: r[0] <= field <= r[1], ranges)):
+                valid = False
+                break
+        
+        if valid:
+            result.append(ticket)
+
+    return result
+
+def invalid_fields(ticket, rules):
+    invalid = []
     ranges = sum([range for _, range in rules], [])
 
     for field in ticket:
         if not any(map(lambda r: r[0] <= field <= r[1], ranges)):
-            invalid_fields.append(field)
+            invalid.append(field)
 
-    return invalid_fields
+    return invalid
 
-def valid_fields(tickets, rules):
-    rules_dict = {rule: i + 1 for i, rule in enumerate(rules)}
+def verify_tickets(tickets, rules):
+    invalid_tickets = []
 
-    g = Glucose3()
-
-    for ticket in tickets:
-        for field in ticket:
-            clause = []
-
-            for rule, ranges in rules:
-                for r in ranges:
-                    if r[0] <= field <= r[1]:
-                        clause.append(rules_dict[rule])
-                    else:
-                        clause.append(-rules_dict[rule])
-
-            g.add_clause(clause)
-
-    return []
+    for ticket_nr, ticket in enumerate(tickets):
+        for field_nr, (field, rule) in enumerate(zip(ticket, rules)):
+            _, ranges = rule
+            if not any(map(lambda r: r[0] <= field <= r[1], ranges)):
+                invalid_tickets.append((ticket_nr, ticket, field_nr, rule))
     
+    return invalid_tickets
+
 def part_one(input):
     rules, _, nearby_tickets = parse_input(input)
 
-    return sum(reduce(lambda x, y: x+y, map(lambda ticket: verify_ticket_any_rule(ticket, rules), nearby_tickets)))
+    return sum(reduce(lambda x, y: x+y, map(lambda ticket: invalid_fields(ticket, rules), nearby_tickets)))
 
 
 def part_two(input, interesting_fields='departure'):
-    rules, my_ticket, nearby_tickets = parse_input(input) #parse_input(read_input('tests/inputs/test_input_day16_2.txt', '\n'))
-    valid_tickets = filter(lambda ticket: len(verify_ticket_any_rule(ticket, rules)) == 0, nearby_tickets)
+    rules, my_ticket, nearby_tickets = parse_input(input)
+    valid = valid_tickets(nearby_tickets, rules)
     
     ticket_rules = []
 
-    for ticket in valid_tickets:
+    for ticket in valid:
         field_rules = []
 
         for field in ticket:
@@ -90,14 +96,12 @@ def part_two(input, interesting_fields='departure'):
     for i in range(len(ticket_rules[0])):
         reduced_ticket_rules.append(list(reduce(lambda x, y: set(x) & set(y), map(lambda tr: tr[i][1], ticket_rules))))
 
-    order = [] 
+    order = [''] * len(reduced_ticket_rules) 
 
-    while reduced_ticket_rules:
-        reduced_ticket_rules = sorted(reduced_ticket_rules, key=len)
-        rule = reduced_ticket_rules[0][0]
-        reduced_ticket_rules = reduced_ticket_rules[1:]
-        reduced_ticket_rules = list(map(lambda x: list(set(x) - set([rule])), reduced_ticket_rules))
-        order.append(rule)
+    for _ in range(len(reduced_ticket_rules)):
+        i, rule = next((i, rule)for i, rule in enumerate(reduced_ticket_rules) if len(rule) == 1)
+        reduced_ticket_rules = list(map(lambda x: list(set(x) - set(rule)), reduced_ticket_rules))
+        order[i] = rule[0]
 
     relevant_fields = filter(lambda x: interesting_fields in x[1], enumerate(order))
     return reduce((lambda x, y: x * y), map(lambda f: my_ticket[f[0]], relevant_fields))

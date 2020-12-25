@@ -16,7 +16,7 @@ class Day18Tests(unittest.TestCase):
             '((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2']), 26 + 437 + 12240 + 13632)
 
     def test_part_two(self):
-        self.assertEqual(part_two(''), 0)
+        self.assertEqual(part_two('1+1'), 2)
 
 
 if __name__ == '__main__':
