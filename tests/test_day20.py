@@ -8,7 +8,7 @@ from src.common.util import read_input
 
 class Day20Tests(unittest.TestCase):
     def test_part_one(self):
-        self.assertEqual(part_one(''), 0)
+        self.assertEqual(part_one(read_input('tests/inputs/test_input_day20_1.txt', '\n')), 20899048083289)
 
     def test_part_two(self):
         self.assertEqual(part_two(''), 0)
