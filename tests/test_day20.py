@@ -11,7 +11,7 @@ class Day20Tests(unittest.TestCase):
         self.assertEqual(part_one(read_input('tests/inputs/test_input_day20_1.txt', '\n')), 20899048083289)
 
     def test_part_two(self):
-        self.assertEqual(part_two(''), 0)
+        self.assertEqual(part_two(read_input('tests/inputs/test_input_day20_1.txt', '\n')), 273)
 
 if __name__ == '__main__':
     unittest.main()
