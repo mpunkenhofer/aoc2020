@@ -1,45 +1,45 @@
 import re
 import math
-import networkx as nx
 from functools import reduce
 import numpy as np
 from src.common.util import read_input
 
 def parse_input(input):
     images, edges = {}, {}
-    id, image = -1, []
+    id, image, bin_image = -1, [], []
 
-    # add a empty line at the end
+    # add a empty line at the end that serves as a terminator
     input.append('')
 
     for line in input:
         id_match = re.match(r'Tile (\d+)', line)
 
         if not line and image:
-            top, right, bot, left = image[0], 0, image[-1], 0
+            top, right, bot, left = bin_image[0], 0, bin_image[-1], 0
 
-            for i, im in enumerate(image):
+            for i, im in enumerate(bin_image):
                 left |= (im & 1) << i
-                right |= ((im & (1 << (len(image) - 1)))
-                          >> (len(image) - 1)) << i
-
-            #print('l: {:010b} r: {:010b}'.format(left, right))
+                right |= ((im & (1 << (len(bin_image) - 1)))
+                          >> (len(bin_image) - 1)) << i
 
             images[id] = image
-            edges[id] = edge_variations((top, right, bot, left), len(image))
+            edges[id] = edge_variations((top, right, bot, left), len(bin_image))
 
-            image = []
+            bin_image, image = [], []
         elif id_match:
             id = int(id_match.group(1))
         else:
-            image_line = 0
+            bits = 0
+            image_line = []
 
             for i, c in enumerate(line):
                 if c == '#':
-                    image_line |= 1 << i
+                    bits |= 1 << i
+                    image_line.append(1)
+                else:
+                    image_line.append(0)
 
-            # print('{0:010b}'.format(image_line))
-
+            bin_image.append(bits)
             image.append(image_line)
 
     return images, edges
@@ -85,26 +85,22 @@ def get_ascii_edge_image(edge, size):
         return frame
     return []
 
-def get_ascii_image(image, size):
-    if size > 0:
-        ascii_image = []
+def get_ascii_image(image):
+    ascii_image = []
 
-        for image_line in image:
-            line = ''
-            for i in range(size):
-                line += '#' if image_line & 1 << i else '.'
-            # print(line)
-            ascii_image.append(line)
+    for image_line in image:
+        line = ''
+        for digit in image_line:
+            line += '#' if digit == 1 else '.'
+        ascii_image.append(line)
 
-        return ascii_image
-
-    return []
+    return ascii_image
 
 def debug_edge_variations(image, edges):
     if len(edges) > 7:
         size = len(image)
 
-        ascii_im = get_ascii_image(image, size)
+        ascii_im = get_ascii_image(image)
         inital = get_ascii_edge_image(edges[0], size)
         hflip_inital = get_ascii_edge_image(edges[1], size)
         vflip_inital = get_ascii_edge_image(edges[2], size)
@@ -132,6 +128,13 @@ def debug_edge_variations(image, edges):
         for line in zip(vflip_inital, vflip_1):
             print('  '.join(line))
 
+def print_panorama(images, image_order):
+    for row in image_order:
+        ascii_images = map(get_ascii_image, map(lambda i: images[i], row))
+        print('')
+        for imgs in zip(*ascii_images):
+            print(' '.join(imgs))
+            
 def from_ascii(ascii):
     result = []
 
@@ -147,7 +150,7 @@ def from_ascii(ascii):
     return result
 
 def tiles_fit(tile_a, tile_b):
-    # looks bad but is constant in n... 8 orientations for 4 edges ... 16 checks for one tile
+    # looks bad but is constant in n... 8 orientations for 4 edges ... 16 checks at most for one tile
     for orientation_a in tile_a:
         for edge_a in orientation_a:
             for orentation_b in tile_b:
@@ -178,74 +181,113 @@ def get_fitting_tiles(edges):
 
     return fitting_tiles
 
-def above(left, bottom, current):
-    # check if current tile is above bottom using left as anchor
-    for ol in left:
-        _, lr, _, _ = ol
-        for ob in bottom:
-            bt, _, _, _ = ob
-            for oc in current:
-                _, _, cb, cl = oc
-                if lr == cl and bt == cb:
-                    return True
-    return False
-
-def get_corner(tiles, neighbors = []):
+def get_corner(tiles):
     # get a corner in the tile DS 
-    # or if neighbors != [] get the corner which is next to a neighbor
     for tile, adjacent in tiles.items():
         if len(adjacent) == 2:
-            if len(neighbors) > 0 and all(map(lambda t: t in adjacent, neighbors)):
-                return tile
-            else:
-                return tile
+            return tile
     return None
-        
-def assemble(fitting_tiles, edges, size):
+
+def assemble(fitting_tiles, size):
     tiles = dict(fitting_tiles) # local copy
-    result = np.zeros((size, size))
-    result_x, result_y = 0, 0
-    stack = [get_corner(tiles)]
+    result = np.zeros((size, size), dtype=int)
+    
+    previous = None
 
-    while stack:
-        if len(stack) > 1:
-            tile_a, tile_b = stack.pop(), stack.pop()
-            next, *_ = set(tiles[tile_a]) & set(tiles[tile_b])
-            
-            tile_a_above = above(edges[result[result_y][result_x - 1]], edges[next], edges[tile_a])
-            tile_b_above = above(edges[result[result_y][result_x - 1]], edges[next], edges[tile_b])
-            if not next:
-                # no more elements in this row, continue with next one: y + 1
-                stack.append(get_corner(tiles, result[result_y][0]))
-                result_x, result_y = 0, result_y + 1
+    for y in range(size):
+        for x in range(size):
+            if not previous:
+                result[y][x] = get_corner(tiles)
             else:
-                stack.append(next)
-        else:
-            # current is a corner, get its neighbors
-            current = stack.pop()
+                if y > 0:
+                    next = [tile for tile in tiles[previous] if tile not in result[y] and tile in fitting_tiles[result[y - 1][x]]]
+                else:
+                    next = [tile for tile in tiles[previous] if len(tiles[tile]) != 4 and tile not in result[y]]
+                
+                result[y][x] = next[0]
+            
+            previous = result[y][x]
 
-            stack += tiles[current]
+        # update tiles
+        tiles = {t: [t for t in ts if t not in result[y]] for t, ts in tiles.items() if t not in result[y][1:]}
+        # set previous
+        previous = result[y][0]
+             
+    return result
 
-            # update tile DS
-            del tiles[current]
-            for tile in stack:
-                tiles[tile] = list(filter(lambda t: t != current, tiles[tile]))
+def tile_orientation(edges, center, top=None, right=None, bot=None, left=None, cutoff=None):
+    result = []
 
-            # place corner tile in result 
-            result[result_y][result_x] = current
-            result_x += 1
+    for i, tile_o in enumerate(edges[center]):
+        center_top, center_right, center_bot, center_left = tile_o
+        for j, top_o in enumerate(edges[top] if top is not None else [(0, 0, center_top, 0)]):
+            _, _, top_bot, _ = top_o
+            for k, right_o in enumerate(edges[right] if right is not None else [(0, 0, 0, center_right)]):
+                _, _, _, right_left = right_o
+                for l, bot_o in enumerate(edges[bot] if bot is not None else [(center_top, 0, 0, 0)]):
+                    bot_top, _, _, _ = bot_o
+                    for m, left_o in enumerate(edges[left] if left is not None else [(0, center_left, 0, 0)]):
+                        _, left_right, _, _ = left_o
 
-    return result 
+                        if center_top == top_bot and center_right == right_left and center_bot == bot_top and center_left == left_right:
+                            result.append((i, j, k, l, m))
+
+                        if cutoff and len(result) >= cutoff:
+                            return result       
+
+    return result
+
+def reorientate(tile, orientation):
+    if orientation == 1:
+        return np.fliplr(tile)
+    elif orientation == 2:
+        return np.flipud(tile)
+    elif orientation == 3:
+        return np.rot90(tile, k=1, axes=(1,0))
+    elif orientation == 4:
+        return np.fliplr(np.rot90(tile, axes=(1,0)))
+    elif orientation == 5:
+        return np.flipud(np.rot90(tile, axes=(1,0)))
+    elif orientation == 6:
+        return np.rot90(tile, k=2, axes=(1,0))
+    elif orientation == 7:
+        return np.rot90(tile, k=3, axes=(1,0))
+    else:
+        return np.array(tile)
+
+def orientate(images, edges, order):
+    result = {}
+
+    first_tile = order[0][0]
+    orientation, *_ = tile_orientation(edges, center=first_tile, right=order[0][1], bot=order[1][0], cutoff=1)[0]
+    orientation_edge = edges[first_tile][orientation]
+    _, previous_right, previous_bot, _ = orientation_edge
+
+    for y, row in enumerate(order):
+        if y > 0:
+            for o, tile_o in enumerate(edges[order[y][0]]):
+                current_top, current_right, current_bot, _ = tile_o
+                if current_top == previous_bot:
+                    orientation = o
+                    previous_bot = current_bot
+                    previous_right = current_right
+                    break
+
+        for x, tile in enumerate(row):
+            if x > 0:
+                for o, tile_o in enumerate(edges[tile]):
+                    _, current_right, _, current_left = tile_o
+                    if current_left == previous_right:
+                        orientation = o
+                        previous_right = current_right
+                        break
+
+            result[tile] = reorientate(images[tile], orientation)
+
+    return result
 
 def stich(images, order):
     image = []
-    
-    for i in range(10):
-        line = []
-        for o in order:
-            current_line = images[o][i]
-
-        image.append(line)
 
     return image
 
@@ -254,12 +296,13 @@ def match(image, pattern):
     return result
 
 def part_one(input):
-    images, edges = parse_input(input)
+    _, edges = parse_input(input)
 
     fitting_tiles = get_fitting_tiles(edges)
 
-    corner_pieces = map(lambda ft: ft[0], filter(lambda ft: len(ft[1]) == 2, fitting_tiles.items()))
+    corner_pieces = list(map(lambda ft: ft[0], filter(lambda ft: len(ft[1]) == 2, fitting_tiles.items())))
 
+    print('Corners: {}'.format(' '.join(map(str, corner_pieces))))
     return reduce(lambda x, y: x * y, corner_pieces)
 
 
@@ -272,7 +315,9 @@ def part_two(input):
     
     fitting_tiles = get_fitting_tiles(edges)
 
-    image_order = assemble(fitting_tiles, edges, int(math.sqrt(len(images))))
+    image_order = assemble(fitting_tiles, int(math.sqrt(len(images))))
+
+    images = orientate(images, edges, image_order)
 
     image = stich(images, image_order)
 
