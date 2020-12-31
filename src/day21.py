@@ -1,36 +1,76 @@
 import re
+import heapq
 from src.common.util import read_input
 
-
-def parse_input(input):
-    result = {}
+def prase_input(input):
+    allergens_dict, food_list = {}, []
 
     for line in input:
-        foods, allergens = line.split('(')
-        allergens_match = re.match(r'contains (.+)\)', allergens)
+            ingredients, allergens = line.split('(')
+            allergens_match = re.match(r'contains (.+)\)', allergens)
 
-        if allergens_match:
-            allergens = allergens_match.group(1).split(', ')
-            foods = foods.strip().split(' ')
+            if allergens_match:
+                allergens = allergens_match.group(1).split(', ')
+                ingredients = ingredients.strip().split(' ')
 
-            for allergen in allergens:
-                if allergen in result:
-                    result[allergen] |= set(foods)
-                else:
-                    result[allergen] = set(foods)
+                for allergen in allergens:
+                    if allergen in allergens_dict:
+                        allergens_dict[allergen] += [ingredients]
+                    else:
+                        allergens_dict[allergen] = [ingredients]
+                
+                food_list.append(ingredients)
+    
+    return allergens_dict, food_list
 
+def food_occurences(allergens):
+    result = {}
+
+    for allergen, foods in allergens.items():
+        for food in foods:
+            if food in result:
+                result[food] |= set([allergen])
+            else:
+                result[food] = set([allergen])
+    
     return result
 
 def part_one(input):
-    allergene_list = parse_input(input)
+    allergens, foods = prase_input(input)
 
-    test = set.difference(*allergene_list.values())
+    bound_ingredients = set()
 
-    return 0
+    for allergen in allergens:
+        bound_ingredients |= set.intersection(*map(set, allergens[allergen]))
 
+    return sum(map(len, map(lambda f: list(filter(lambda i: i not in bound_ingredients, f)), foods)))
 
 def part_two(input):
-    return 0
+    allergens, _ = prase_input(input)
+
+    for allergen in allergens:
+        allergens[allergen] = set.intersection(*map(set, allergens[allergen]))
+    
+    result = {}
+    stack = list(food_occurences(allergens).items())
+
+    while stack:
+        index = 0
+
+        for i, (_, allergens) in enumerate(stack):
+            if len(allergens) == 1:
+                index = i
+                break
+
+        food, allergen = stack.pop(index)
+        result[next(iter(allergen))] = food
+
+        for i, (food, allergens) in enumerate(stack):
+            stack[i] = (food, allergens - allergen)
+
+    sorted_result = sorted(result.items(), key=lambda i: i[0])
+
+    return ','.join(map(lambda i: i[1], sorted_result))
 
 
 def main():
