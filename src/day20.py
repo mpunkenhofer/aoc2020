@@ -1,5 +1,6 @@
 import re
 import math
+import collections
 from functools import reduce
 import numpy as np
 from src.common.util import read_input
@@ -245,9 +246,11 @@ def reorientate(tile, orientation):
     elif orientation == 3:
         return np.rot90(tile, k=1, axes=(1,0))
     elif orientation == 4:
-        return np.fliplr(np.rot90(tile, axes=(1,0)))
+        rotated = np.rot90(tile, axes=(1,0))
+        return np.fliplr(rotated)
     elif orientation == 5:
-        return np.flipud(np.rot90(tile, axes=(1,0)))
+        rotated = np.rot90(tile, axes=(1,0))
+        return np.flipud(rotated)
     elif orientation == 6:
         return np.rot90(tile, k=2, axes=(1,0))
     elif orientation == 7:
@@ -289,11 +292,50 @@ def orientate(images, edges, order):
 def stich(images, order):
     image = []
 
+    for row in order:
+        image_row = list(map(lambda id: images[id][1:-1, 1:-1], row))
+        image_row = np.hstack(image_row)
+
+        if len(image) < 1:
+            image = image_row
+        else:
+            image = np.vstack((image, image_row))
+            
     return image
 
 def match(image, pattern):
+    pattern_width, pattern_height = len(pattern[0]), len(pattern)
     result = 0
+
+    relevant_indices = []
+    for y, row in enumerate(pattern):
+        for x, element in enumerate(row):
+            if element == 1:
+                relevant_indices.append((x, y))
+
+
+    for y in range(len(image) - pattern_height):
+        for x in range(len(image[y]) - pattern_width):
+            matches = 0
+
+            for idx_x, idx_y in relevant_indices:
+                if image[y + idx_y][x + idx_x]:
+                    matches += 1
+
+            if matches == len(relevant_indices):
+                result += 1
+
     return result
+
+def find_sea_monsters(image, pattern):
+    for i in range(8):
+        reorientated_image = reorientate(image, i)
+        result = match(reorientated_image, pattern)
+
+        if result != 0:
+            return result
+
+    return 0    
 
 def part_one(input):
     _, edges = parse_input(input)
@@ -321,11 +363,11 @@ def part_two(input):
 
     image = stich(images, image_order)
 
-    match_count = match(image, pattern)
+    match_count = find_sea_monsters(image, pattern)
 
-    pattern_count = sum(map(lambda l: l.count(1), pattern))
+    pattern_count = sum(map(lambda l: collections.Counter(l)[1], pattern))
 
-    image_count = sum(map(lambda l: l.count(1), image))
+    image_count = sum(map(lambda l: collections.Counter(l)[1], image))
 
     return image_count - (match_count * pattern_count)
 
