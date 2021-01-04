@@ -8,7 +8,7 @@ from src.common.util import read_input
 
 class Day25Tests(unittest.TestCase):
     def test_part_one(self):
-        self.assertEqual(part_one(''), 0)
+        self.assertEqual(part_one(['5764801', '17807724']), 14897079)
 
     def test_part_two(self):
         self.assertEqual(part_two(''), 0)
